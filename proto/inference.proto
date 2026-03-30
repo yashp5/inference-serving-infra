@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+// go_package tells protoc where to put the generated code in the Go module
+// format: "module_path/gen;package_alias"
+option go_package = "github.com/yashp5/inference-serving-infra/gen;inferencepb";
+
+package inference;
+
+message GenerateRequest {
+    string request_id  = 1;
+    string prompt = 2;
+    int32 max_tokens = 3;
+    float temperature = 4;
+}
+
+message GenerateResponse {
+    string request_id  = 1;
+    string generated_text = 2;
+    int32 tokens_generated = 3;
+    int32 inference_time_ms = 4;
+}
+
+service Inference {
+    rpc Generate (GenerateRequest) returns (GenerateResponse) {}
+}
