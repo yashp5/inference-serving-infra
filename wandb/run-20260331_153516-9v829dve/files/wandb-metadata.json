@@ -1,0 +1,37 @@
+{
+  "os": "macOS-15.5-arm64-arm-64bit-Mach-O",
+  "python": "CPython 3.13.5",
+  "startedAt": "2026-03-31T22:35:16.216657Z",
+  "program": "/Users/yash/ml-infra/inference-serving-infra/transformer/train/train.py",
+  "codePath": "transformer/train/train.py",
+  "codePathLocal": "transformer/train/train.py",
+  "git": {
+    "remote": "https://github.com/yashp5/inference-serving-infra.git",
+    "commit": "cdaf03ffbcfad69060b6774226d73f9b958be0bf"
+  },
+  "email": "yhp2378@gmail.com",
+  "root": "/Users/yash/ml-infra/inference-serving-infra",
+  "host": "yashs-MacBook-Air.local",
+  "executable": "/Users/yash/ml-infra/inference-serving-infra/.venv/bin/python3",
+  "cpu_count": 8,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "245107195904",
+      "used": "244964147200"
+    }
+  },
+  "memory": {
+    "total": "8589934592"
+  },
+  "apple": {
+    "name": "Apple M2",
+    "ecpuCores": 4,
+    "pcpuCores": 4,
+    "gpuCores": 10,
+    "memoryGb": 8,
+    "swapTotalBytes": "4831838208",
+    "ramTotalBytes": "8589934592"
+  },
+  "writerId": "wmipop5pj5sss5koqcge8zhuumq5i49t"
+}

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\tinference\"J\n\x0fGenerateRequest\x12\x0e\n\x06prompt\x18\x01 \x01(\t\x12\x12\n\nmax_tokens\x18\x02 \x01(\x05\x12\x13\n\x0btemperature\x18\x03 \x01(\x02\"_\n\x10GenerateResponse\x12\x16\n\x0egenerated_text\x18\x01 \x01(\t\x12\x18\n\x10tokens_generated\x18\x02 \x01(\x05\x12\x19\n\x11inference_time_ms\x18\x03 \x01(\x05\x32R\n\tInference\x12\x45\n\x08Generate\x12\x1a.inference.GenerateRequest\x1a\x1b.inference.GenerateResponse\"\x00\x42;Z9github.com/yashp5/inference-serving-infra/gen;inferencepbb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\tinference\"^\n\x0fGenerateRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x0e\n\x06prompt\x18\x02 \x01(\t\x12\x12\n\nmax_tokens\x18\x03 \x01(\x05\x12\x13\n\x0btemperature\x18\x04 \x01(\x02\"s\n\x10GenerateResponse\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x16\n\x0egenerated_text\x18\x02 \x01(\t\x12\x18\n\x10tokens_generated\x18\x03 \x01(\x05\x12\x19\n\x11inference_time_ms\x18\x04 \x01(\x05\x32R\n\tInference\x12\x45\n\x08Generate\x12\x1a.inference.GenerateRequest\x1a\x1b.inference.GenerateResponse\"\x00\x42;Z9github.com/yashp5/inference-serving-infra/gen;inferencepbb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,9 +33,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z9github.com/yashp5/inference-serving-infra/gen;inferencepb'
   _globals['_GENERATEREQUEST']._serialized_start=30
-  _globals['_GENERATEREQUEST']._serialized_end=104
-  _globals['_GENERATERESPONSE']._serialized_start=106
-  _globals['_GENERATERESPONSE']._serialized_end=201
-  _globals['_INFERENCE']._serialized_start=203
-  _globals['_INFERENCE']._serialized_end=285
+  _globals['_GENERATEREQUEST']._serialized_end=124
+  _globals['_GENERATERESPONSE']._serialized_start=126
+  _globals['_GENERATERESPONSE']._serialized_end=241
+  _globals['_INFERENCE']._serialized_start=243
+  _globals['_INFERENCE']._serialized_end=325
 # @@protoc_insertion_point(module_scope)

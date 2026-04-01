@@ -7,11 +7,12 @@
 package inferencepb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -23,9 +24,10 @@ const (
 
 type GenerateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prompt        string                 `protobuf:"bytes,1,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	MaxTokens     int32                  `protobuf:"varint,2,opt,name=max_tokens,json=maxTokens,proto3" json:"max_tokens,omitempty"`
-	Temperature   float32                `protobuf:"fixed32,3,opt,name=temperature,proto3" json:"temperature,omitempty"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Prompt        string                 `protobuf:"bytes,2,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	MaxTokens     int32                  `protobuf:"varint,3,opt,name=max_tokens,json=maxTokens,proto3" json:"max_tokens,omitempty"`
+	Temperature   float32                `protobuf:"fixed32,4,opt,name=temperature,proto3" json:"temperature,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -60,6 +62,13 @@ func (*GenerateRequest) Descriptor() ([]byte, []int) {
 	return file_inference_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *GenerateRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 func (x *GenerateRequest) GetPrompt() string {
 	if x != nil {
 		return x.Prompt
@@ -83,9 +92,10 @@ func (x *GenerateRequest) GetTemperature() float32 {
 
 type GenerateResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	GeneratedText   string                 `protobuf:"bytes,1,opt,name=generated_text,json=generatedText,proto3" json:"generated_text,omitempty"`
-	TokensGenerated int32                  `protobuf:"varint,2,opt,name=tokens_generated,json=tokensGenerated,proto3" json:"tokens_generated,omitempty"`
-	InferenceTimeMs int32                  `protobuf:"varint,3,opt,name=inference_time_ms,json=inferenceTimeMs,proto3" json:"inference_time_ms,omitempty"`
+	RequestId       string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	GeneratedText   string                 `protobuf:"bytes,2,opt,name=generated_text,json=generatedText,proto3" json:"generated_text,omitempty"`
+	TokensGenerated int32                  `protobuf:"varint,3,opt,name=tokens_generated,json=tokensGenerated,proto3" json:"tokens_generated,omitempty"`
+	InferenceTimeMs int32                  `protobuf:"varint,4,opt,name=inference_time_ms,json=inferenceTimeMs,proto3" json:"inference_time_ms,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -120,6 +130,13 @@ func (*GenerateResponse) Descriptor() ([]byte, []int) {
 	return file_inference_proto_rawDescGZIP(), []int{1}
 }
 
+func (x *GenerateResponse) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 func (x *GenerateResponse) GetGeneratedText() string {
 	if x != nil {
 		return x.GeneratedText
@@ -145,16 +162,20 @@ var File_inference_proto protoreflect.FileDescriptor
 
 const file_inference_proto_rawDesc = "" +
 	"\n" +
-	"\x0finference.proto\x12\tinference\"j\n" +
-	"\x0fGenerateRequest\x12\x16\n" +
-	"\x06prompt\x18\x01 \x01(\tR\x06prompt\x12\x1d\n" +
+	"\x0finference.proto\x12\tinference\"\x89\x01\n" +
+	"\x0fGenerateRequest\x12\x1d\n" +
 	"\n" +
-	"max_tokens\x18\x02 \x01(\x05R\tmaxTokens\x12 \n" +
-	"\vtemperature\x18\x03 \x01(\x02R\vtemperature\"\x90\x01\n" +
-	"\x10GenerateResponse\x12%\n" +
-	"\x0egenerated_text\x18\x01 \x01(\tR\rgeneratedText\x12)\n" +
-	"\x10tokens_generated\x18\x02 \x01(\x05R\x0ftokensGenerated\x12*\n" +
-	"\x11inference_time_ms\x18\x03 \x01(\x05R\x0finferenceTimeMs2R\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12\x16\n" +
+	"\x06prompt\x18\x02 \x01(\tR\x06prompt\x12\x1d\n" +
+	"\n" +
+	"max_tokens\x18\x03 \x01(\x05R\tmaxTokens\x12 \n" +
+	"\vtemperature\x18\x04 \x01(\x02R\vtemperature\"\xaf\x01\n" +
+	"\x10GenerateResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\tR\trequestId\x12%\n" +
+	"\x0egenerated_text\x18\x02 \x01(\tR\rgeneratedText\x12)\n" +
+	"\x10tokens_generated\x18\x03 \x01(\x05R\x0ftokensGenerated\x12*\n" +
+	"\x11inference_time_ms\x18\x04 \x01(\x05R\x0finferenceTimeMs2R\n" +
 	"\tInference\x12E\n" +
 	"\bGenerate\x12\x1a.inference.GenerateRequest\x1a\x1b.inference.GenerateResponse\"\x00B;Z9github.com/yashp5/inference-serving-infra/gen;inferencepbb\x06proto3"
 
