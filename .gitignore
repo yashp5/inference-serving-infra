@@ -92,3 +92,5 @@ runs/
 
 # Custom debug files
 debug.log
+
+wandb/
