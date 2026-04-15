@@ -13,13 +13,14 @@ import (
 )
 
 func main() {
-	inferClient, conn, err := worker.New("localhost:50051")
+	inferClient, conn, err := worker.New("http://localhost:50051")
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 
-	h := api.NewHandler(inferClient, conn)
+	ctx := context.Background()
+	h := api.NewHandler(ctx, inferClient, conn)
 	mux := api.NewMux(h)
 
 	srv := &http.Server{Addr: ":8080", Handler: mux}

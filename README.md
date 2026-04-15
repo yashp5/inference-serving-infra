@@ -273,7 +273,7 @@ Advanced but extremely relevant to current LLM infrastructure.
 **What to build:**
 - Cache layer in Go that maps prompt prefixes (hashed) to cached KV state
 - On new request, check if any prefix of the prompt has a cached KV state
-- If cache hit, tell the worker to resume from cached state instead of recomputing the full prefill
+- If cache hit, tell the worker to resume from cached state instead of recomputing the full prefillA
 - LRU eviction for the cache (KV states are large)
 - Cache hit/miss rate metrics
 

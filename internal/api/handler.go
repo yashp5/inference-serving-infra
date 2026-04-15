@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,7 +20,11 @@ const (
 	rateLimiterRequests = 10
 	rateLimiterWindowMs = 100
 	workerCount         = 3
+	maxBatchSize        = 8
+	maxBatchWaitTimeMs  = 100
 )
+
+type Batch []*Request
 
 type Priority int
 
@@ -50,14 +55,18 @@ type Handler struct {
 
 func NewHandler(ctx context.Context, inferClient inferencepb.InferenceClient, conn *grpc.ClientConn) *Handler {
 	pq := NewPriorityQueue()
-	wchs := make([]chan *Request, 0)
+	reqCh := make(chan *Request)
+	wchs := make([]chan Batch, 0, workerCount)
 	for range workerCount {
-		worker := NewWorker(inferClient)
+		batchch := make(chan Batch, 10)
+		worker := NewWorker(inferClient, batchch)
 		worker.Start(ctx)
-		wchs = append(wchs, worker.reqch)
+		wchs = append(wchs, worker.batchch)
 	}
-	dispatcher := NewDispatcher(pq, wchs)
+	dispatcher := NewDispatcher(pq, reqCh)
 	dispatcher.Start(ctx)
+	batcher := NewBatcher(wchs, reqCh)
+	batcher.Start(ctx)
 	return &Handler{
 		inferClient:   inferClient,
 		conn:          conn,
@@ -106,6 +115,7 @@ func (h *Handler) Infer(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, ErrorResponse{RequestId: requestId, Error: errMsg})
 		return
 	}
+
 	req := &Request{
 		body:     reqBody,
 		priority: MEDIUM,
@@ -127,16 +137,16 @@ func (h *Handler) Infer(w http.ResponseWriter, r *http.Request) {
 }
 
 type Dispatcher struct {
-	pq        *PriorityQueue
-	workerChs []chan *Request
-	next      int
+	pq    *PriorityQueue
+	next  int
+	reqCh chan<- *Request
 }
 
-func NewDispatcher(pq *PriorityQueue, workerChs []chan *Request) *Dispatcher {
+func NewDispatcher(pq *PriorityQueue, reqCh chan<- *Request) *Dispatcher {
 	return &Dispatcher{
-		pq:        pq,
-		workerChs: workerChs,
-		next:      0,
+		pq:    pq,
+		next:  0,
+		reqCh: reqCh,
 	}
 }
 
@@ -159,25 +169,74 @@ func (d *Dispatcher) Start(ctx context.Context) {
 				}
 				d.pq.mu.Unlock()
 				for _, req := range reqs {
-					d.workerChs[d.next%len(d.workerChs)] <- req
-					d.next++
+					d.reqCh <- req
 				}
 			}
 		}
 	}()
 }
 
-const workerBufferSize = 100
+type Batcher struct {
+	maxBatchSize int
+	maxWaitTime  time.Duration
+	workerChs    []chan Batch
+	next         int
+	reqCh        <-chan *Request
+	batch        []*Request
+}
+
+func NewBatcher(workerChs []chan Batch, reqCh <-chan *Request) *Batcher {
+	return &Batcher{
+		workerChs: workerChs,
+		next:      0,
+		reqCh:     reqCh,
+		batch:     make([]*Request, 0, maxBatchSize),
+	}
+}
+
+func (b *Batcher) Start(ctx context.Context) {
+	var timer *time.Timer
+	var timerch <-chan time.Time
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case req := <-b.reqCh:
+				b.batch = append(b.batch, req)
+				if len(b.batch) == 1 {
+					timer = time.NewTimer(maxBatchWaitTimeMs * time.Millisecond)
+					timerch = timer.C
+				}
+				if len(b.batch) >= maxBatchSize {
+					timer.Stop()
+					timerch = nil
+					b.Flush()
+				}
+			case <-timerch:
+				b.Flush()
+				timer.Stop()
+				timerch = nil
+			}
+		}
+	}()
+}
+
+func (b *Batcher) Flush() {
+	b.workerChs[b.next%len(b.workerChs)] <- Batch(b.batch)
+	b.next++
+	b.batch = b.batch[:0]
+}
 
 type Worker struct {
 	inferClient inferencepb.InferenceClient
-	reqch       chan *Request
+	batchch     chan Batch
 }
 
-func NewWorker(inferClient inferencepb.InferenceClient) *Worker {
+func NewWorker(inferClient inferencepb.InferenceClient, batchch chan Batch) *Worker {
 	return &Worker{
 		inferClient: inferClient,
-		reqch:       make(chan *Request, workerBufferSize),
+		batchch:     batchch,
 	}
 }
 
@@ -187,41 +246,47 @@ func (w *Worker) Start(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
-			case req := <-w.reqch:
-				w.Process(*req)
+			case b := <-w.batchch:
+				w.Process(b)
 			}
 		}
 	}()
 }
 
-func (w *Worker) Process(req Request) {
+func (w *Worker) Process(b Batch) {
 	totalStart := time.Now()
+	wg := sync.WaitGroup{}
 
-	grpcStart := time.Now()
-	inferResp, err := w.inferClient.Generate(req.ctx, &inferencepb.GenerateRequest{
-		RequestId:   req.body.RequestId,
-		Prompt:      req.body.Prompt,
-		MaxTokens:   int32(req.body.MaxTokens),
-		Temperature: float32(req.body.Temperature),
-	})
-	grpcLatency := time.Since(grpcStart)
-	totalLatency := time.Since(totalStart)
+	for _, req := range b {
+		wg.Add(1)
+		go func(req *Request) {
+			defer wg.Done()
+			grpcStart := time.Now()
+			inferResp, err := w.inferClient.Generate(req.ctx, &inferencepb.GenerateRequest{
+				RequestId:   req.body.RequestId,
+				Prompt:      req.body.Prompt,
+				MaxTokens:   int32(req.body.MaxTokens),
+				Temperature: float32(req.body.Temperature),
+			})
+			grpcLatency := time.Since(grpcStart)
+			totalLatency := time.Since(totalStart)
 
-	if err != nil {
-		log.Printf("[request_id=%s] grpc error total=%dms grpc=%dms overhead=%dms err=%v", req.body.RequestId, totalLatency.Milliseconds(), grpcLatency.Milliseconds(), (totalLatency - grpcLatency).Milliseconds(), err)
-		req.respCh <- &Response{
-			error: err,
-		}
-		return
+			if err != nil {
+				log.Printf("[request_id=%s] grpc error total=%dms grpc=%dms overhead=%dms err=%v", req.body.RequestId, totalLatency.Milliseconds(), grpcLatency.Milliseconds(), (totalLatency - grpcLatency).Milliseconds(), err)
+				req.respCh <- &Response{body: nil, error: err}
+				return
+			}
+
+			respBody := &CompletionsReponse{
+				RequestId:       req.body.RequestId,
+				GeneratedText:   inferResp.GeneratedText,
+				TokensGenerated: int(inferResp.TokensGenerated),
+				InferenceTimeMs: int(inferResp.InferenceTimeMs),
+			}
+
+			req.respCh <- &Response{body: respBody, error: nil}
+		}(req)
 	}
 
-	respBody := &CompletionsReponse{
-		RequestId:       req.body.RequestId,
-		GeneratedText:   inferResp.GeneratedText,
-		TokensGenerated: int(inferResp.TokensGenerated),
-		InferenceTimeMs: int(inferResp.InferenceTimeMs),
-	}
-	req.respCh <- &Response{
-		body: respBody,
-	}
+	wg.Wait()
 }
